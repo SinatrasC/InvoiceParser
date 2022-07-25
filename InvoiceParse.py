@@ -1,4 +1,5 @@
 import io
+import requests
 from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
 from pdfminer.converter import HTMLConverter
 from pdfminer.layout import LAParams
@@ -164,7 +165,6 @@ if mul_sum:
     c.execute("INSERT INTO summaries VALUES(NULL,?,?,?,?,?,?)", (str(date), template, str(sum), "$", str(sum2), "€"))
 else:
     c.execute("INSERT INTO summaries VALUES(NULL,?,?,?,?,?,?)", (str(date), template, str(sum), "$", "None", "None"))
-#(str(date), template, str(sum))
 conn.commit()
 # Insert package and price lists to products table
 if mul_sum:
@@ -173,6 +173,18 @@ if mul_sum:
 else:
     for i in range(len(packages)):
         c.execute("INSERT INTO products VALUES(NULL,?,?,?,?,?)", (str(date), template, str(packages[i]), str(prices[i]), "$"))
-#(str(date), template, str(packages[i]), str(prices[i]))
 conn.commit()
 conn.close()
+
+### Currency Conversion Stage ###
+# Load Currency Conversion Rates from api.exchangerate.host
+date = "2020-04-04"
+fromc = "USD"
+toc = "TRY"
+amount = 1
+url = "https://api.exchangerate.host/" + str(date) + "?base=" + fromc + "&symbols="+ toc
+response = requests.get(url)
+data = response.json()
+rate = str(data['rates'])
+rate = float(rate.replace("{'TRY': ", "").replace("}", ""))
+print("USD to TL price", rate*amount)
