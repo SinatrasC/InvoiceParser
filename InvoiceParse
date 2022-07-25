@@ -34,8 +34,8 @@ def convert2html(fname, pages=None):
     return HtmlConverted
 
 path = "C:\\Users\\Emin\\Desktop\\InvoiceParse"
-fileIn= "BE02019000688551"
-#fileIn= "53727368"
+#fileIn= "BE02019000688551"
+fileIn= "53727368"
 fileOut =path+"/"+fileIn+".html"
 filePDF=path+"/"+fileIn+".pdf"
 
@@ -71,6 +71,11 @@ prices_index = int(config[template]['prices_index'])
 packages_index = int(config[template]['packages_index'])
 loop_range_start = int(config[template]['loop_range_start'])
 loop_range_end = int(config[template]['loop_range_end'])
+
+#  Load Optional Parameters
+mul_sum = config.getboolean(template,'mul_sum')
+if mul_sum:
+    sum_selector2 = config[template]['sum_selector2']
 
 dateSelector = date_selector   # Selector for invoice date, static for now will be dynamic with after config implementation
 if "br" in dateSelector:
@@ -121,6 +126,15 @@ else:
     sum = [r.text.strip() for r in sum]
 print("Toplam Ödenecek Tutar", sum)
 
+if mul_sum:
+    sumSelector2 = sum_selector2  # Selector for price summary, static for now will be dynamic with after config implementation
+    if "br" in sumSelector2:
+        sum2 = soup.select(sumSelector2)[0].next_sibling # "next_sibling" is used for reading the value after <br> tag
+    else:
+        sum2 = soup.select(sumSelector2)
+        sum2 = [r.text.strip() for r in sum2]
+    print("Toplam Ödenecek Tutar (Optional)", sum2)
+
 ### Database Insertion Stage ###
 conn = sqlite3.connect('invoices.db')
 c = conn.cursor()
@@ -129,7 +143,10 @@ c.execute("""CREATE TABLE IF NOT EXISTS summaries(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     date TEXT,
     company TEXT,
-    sum TEXT
+    sum TEXT,
+    sum_currency TEXT,
+    sum_mul TEXT,
+    sum_mul_currency TEXT
     )""")
 conn.commit()
 # Create products table within desired format if it doesnt exist
@@ -138,14 +155,24 @@ c.execute("""CREATE TABLE IF NOT EXISTS products(
         date TEXT,
         company TEXT,
         package TEXT,
-        price TEXT
+        price TEXT,
+        price_currency TEXT
         )""")
 conn.commit()
 # Insert date company and sum lists to summaries table
-c.execute("INSERT INTO summaries VALUES(NULL,?,?,?)", (str(date), template, str(sum)))
+if mul_sum:
+    c.execute("INSERT INTO summaries VALUES(NULL,?,?,?,?,?,?)", (str(date), template, str(sum), "$", str(sum2), "€"))
+else:
+    c.execute("INSERT INTO summaries VALUES(NULL,?,?,?,?,?,?)", (str(date), template, str(sum), "$", "None", "None"))
+#(str(date), template, str(sum))
 conn.commit()
 # Insert package and price lists to products table
-for i in range(len(packages)):
-    c.execute("INSERT INTO products VALUES(NULL,?,?,?,?)", (str(date), template, str(packages[i]), str(prices[i])))
+if mul_sum:
+    for i in range(len(packages)):
+        c.execute("INSERT INTO products VALUES(NULL,?,?,?,?,?)", (str(date), template, str(packages[i]), str(prices[i]), "$"))
+else:
+    for i in range(len(packages)):
+        c.execute("INSERT INTO products VALUES(NULL,?,?,?,?,?)", (str(date), template, str(packages[i]), str(prices[i]), "$"))
+#(str(date), template, str(packages[i]), str(prices[i]))
 conn.commit()
 conn.close()
