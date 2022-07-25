@@ -10,12 +10,13 @@ import numpy as np
 import os
 import re
 import configparser
+import sqlite3
 
 #  Load Config
 config = configparser.ConfigParser()
 config.read('config.ini')
 
-### HTML conversion stage ###
+### HTML Conversion Stage ###
 
 def convert2html(fname, pages=None):
     pagenums = set()     
@@ -33,8 +34,8 @@ def convert2html(fname, pages=None):
     return HtmlConverted
 
 path = "C:\\Users\\Emin\\Desktop\\InvoiceParse"
-#fileIn= "BE02019000688551"
-fileIn= "53727368"
+fileIn= "BE02019000688551"
+#fileIn= "53727368"
 fileOut =path+"/"+fileIn+".html"
 filePDF=path+"/"+fileIn+".pdf"
 
@@ -77,10 +78,16 @@ if "br" in dateSelector:
 else:
     date = soup.select(dateSelector)
     date = [r.text.strip() for r in date]
+    #parse date as datetime object
+    #date = dt.datetime.strptime(date[0], '%d.%m.%Y')
 print("Fatura Tarihi", date)
 
 i = packages_index   # CSS index loop counter for Packages
 z = prices_index  # CSS index loop counter for Prices
+
+# Create package and price lists
+packages = []
+prices = []
 
 loop = range(loop_range_start, loop_range_end)   # Temp loop stop rule until determining empty rows     
 for i in loop:
@@ -101,7 +108,11 @@ for i in loop:
     z = z + 1   # Increment index of Prices CSS Selector to adress next row/price
     
     print("Paket :", str(package), "Fiyatı :", price)
-    
+
+    #save package and price to a list
+    packages.append(package)
+    prices.append(price)
+        
 sumSelector = sum_selector  # Selector for price summary, static for now will be dynamic with after config implementation
 if "br" in sumSelector:
     sum = soup.select(sumSelector)[0].next_sibling # "next_sibling" is used for reading the value after <br> tag
@@ -109,3 +120,32 @@ else:
     sum = soup.select(sumSelector)
     sum = [r.text.strip() for r in sum]
 print("Toplam Ödenecek Tutar", sum)
+
+### Database Insertion Stage ###
+conn = sqlite3.connect('invoices.db')
+c = conn.cursor()
+# Create summaries table within desired format if it doesnt exist
+c.execute("""CREATE TABLE IF NOT EXISTS summaries(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    date TEXT,
+    company TEXT,
+    sum TEXT
+    )""")
+conn.commit()
+# Create products table within desired format if it doesnt exist
+c.execute("""CREATE TABLE IF NOT EXISTS products(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        date TEXT,
+        company TEXT,
+        package TEXT,
+        price TEXT
+        )""")
+conn.commit()
+# Insert date company and sum lists to summaries table
+c.execute("INSERT INTO summaries VALUES(NULL,?,?,?)", (str(date), template, str(sum)))
+conn.commit()
+# Insert package and price lists to products table
+for i in range(len(packages)):
+    c.execute("INSERT INTO products VALUES(NULL,?,?,?,?)", (str(date), template, str(packages[i]), str(prices[i])))
+conn.commit()
+conn.close()
