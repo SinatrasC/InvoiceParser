@@ -35,8 +35,8 @@ def convert2html(fname, pages=None):
     return HtmlConverted
 
 path = "C:\\Users\\Emin\\Desktop\\InvoiceParse"
-#fileIn= "BE02019000688551"
-fileIn= "53727368"
+fileIn= "BE02019000688551"
+#fileIn= "53727368"
 fileOut =path+"/"+fileIn+".html"
 filePDF=path+"/"+fileIn+".pdf"
 
@@ -115,6 +115,9 @@ for i in loop:
     
     print("Paket :", str(package), "Fiyatı :", price)
 
+    price = str(price)
+    price = price.replace(",", ".")
+    price = float(re.search(r"[-+]?\d*\.\d+|\d+", price).group(0))
     #save package and price to a list
     packages.append(package)
     prices.append(price)
@@ -202,7 +205,7 @@ c.execute("""CREATE TABLE IF NOT EXISTS products(
     date TEXT,
     company TEXT,
     package TEXT,
-    price TEXT,
+    price FLOAT,
     price_currency TEXT
     )""")
 conn.commit()
@@ -216,10 +219,10 @@ conn.commit()
 # Insert package and price lists to products table
 if mul_sum:
     for i in range(len(packages)):
-        c.execute("INSERT INTO products VALUES(NULL,?,?,?,?,?)", (str(date), template, str(packages[i]), str(prices[i]), "$"))
+        c.execute("INSERT INTO products VALUES(NULL,?,?,?,?,?)", (str(date), template, str(packages[i]), float(prices[i]), currency))
 else:
     for i in range(len(packages)):
-        c.execute("INSERT INTO products VALUES(NULL,?,?,?,?,?)", (str(date), template, str(packages[i]), str(prices[i]), "$"))
+        c.execute("INSERT INTO products VALUES(NULL,?,?,?,?,?)", (str(date), template, str(packages[i]), float(prices[i]), currency))
 conn.commit()
 conn.close()
 
@@ -235,3 +238,23 @@ data = response.json()
 rate = str(data['rates'])
 rate = float(rate.replace("{'TRY': ", "").replace("}", ""))
 print("USD to TL price", rate*amount)
+
+
+### Database Read Stage ###
+conn = sqlite3.connect('invoices.db')
+c = conn.cursor()
+c.execute("SELECT * FROM summaries")
+data = c.fetchall()
+date = []
+sum_list = []
+sum_mul_list = []
+for i in data:
+    print (i)
+    date.append(i[1])
+    sum_list.append(i[3])
+    sum_mul_list.append(i[5])
+conn.close()
+plt.plot(date, sum_list, label="Toplam Ödenecek Tutar")
+plt.plot(date, sum_mul_list, label="Toplam Ödenecek Tutar (Optional)")
+plt.legend()
+plt.show()
