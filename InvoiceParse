@@ -1,0 +1,111 @@
+import io
+from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
+from pdfminer.converter import HTMLConverter
+from pdfminer.layout import LAParams
+from pdfminer.pdfpage import PDFPage
+from bs4 import BeautifulSoup
+from matplotlib import pyplot as plt
+import datetime as dt
+import numpy as np
+import os
+import re
+import configparser
+
+#  Load Config
+config = configparser.ConfigParser()
+config.read('config.ini')
+
+### HTML conversion stage ###
+
+def convert2html(fname, pages=None):
+    pagenums = set()     
+    manager = PDFResourceManager()
+    output = io.BytesIO()
+    converter = HTMLConverter(manager, output, codec='utf-8', laparams=LAParams())
+    interpreter = PDFPageInterpreter(manager, converter)  
+    infile = open(fname, 'rb')
+    ### As invoices could be multiple pages and its number is not static determining a for loop for each page
+    for page in PDFPage.get_pages(infile, pagenums,caching=True, check_extractable=True):
+        interpreter.process_page(page)
+ 
+    HtmlConverted = output.getvalue()  
+    infile.close(); converter.close(); output.close()
+    return HtmlConverted
+
+path = "C:\\Users\\Emin\\Desktop\\InvoiceParse"
+#fileIn= "BE02019000688551"
+fileIn= "53727368"
+fileOut =path+"/"+fileIn+".html"
+filePDF=path+"/"+fileIn+".pdf"
+
+covertedHTML = convert2html(filePDF, pages=None)
+fileConverted = open(fileOut, "wb")
+fileConverted.write(covertedHTML)
+fileConverted.close()
+
+### Parsing Stage after HTML conversion ###
+
+HTMLFile = open(fileOut, "r", encoding="utf-8")
+source = HTMLFile.read()
+soup = BeautifulSoup(source, "html.parser")
+HTMLFile.close()
+
+### Template Matching Before Patterns ###
+flags = config.items( "Templates" )
+for key, flag in flags:
+    if(soup.find(text=re.compile(flag))):
+        template = flag
+        break
+
+#  Load Section CSS Selectors
+sum_selector = config[template]['sum_selector']
+date_selector = config[template]['date_selector']
+prices_selector_s1 = config[template]['prices_selector_s1']
+prices_selector_s2 = config[template]['prices_selector_s2']
+packages_selector_s1 = config[template]['packages_selector_s1']
+packages_selector_s2 = config[template]['packages_selector_s2']
+
+#  Load Indexes of CSS Selectors
+prices_index = int(config[template]['prices_index'])
+packages_index = int(config[template]['packages_index'])
+loop_range_start = int(config[template]['loop_range_start'])
+loop_range_end = int(config[template]['loop_range_end'])
+
+dateSelector = date_selector   # Selector for invoice date, static for now will be dynamic with after config implementation
+if "br" in dateSelector:
+    date = soup.select(dateSelector)[0].next_sibling # "next_sibling" is used for reading the value after <br> tag in case there is a br tag in our selector
+else:
+    date = soup.select(dateSelector)
+    date = [r.text.strip() for r in date]
+print("Fatura Tarihi", date)
+
+i = packages_index   # CSS index loop counter for Packages
+z = prices_index  # CSS index loop counter for Prices
+
+loop = range(loop_range_start, loop_range_end)   # Temp loop stop rule until determining empty rows     
+for i in loop:
+    packageSelector = packages_selector_s1
+    packageSelector += str(i)
+    packageSelector += packages_selector_s2
+    package = soup.select(packageSelector)
+    package = [r.text.strip() for r in package]
+
+    i = i + 1   # Increment index of Packages CSS Selector to adress next row/package
+    
+    priceSelector = prices_selector_s1
+    priceSelector += str(z)
+    priceSelector += prices_selector_s2
+    price = soup.select(priceSelector)
+    price = [r.text.strip() for r in price]
+    
+    z = z + 1   # Increment index of Prices CSS Selector to adress next row/price
+    
+    print("Paket :", str(package), "Fiyatı :", price)
+    
+sumSelector = sum_selector  # Selector for price summary, static for now will be dynamic with after config implementation
+if "br" in sumSelector:
+    sum = soup.select(sumSelector)[0].next_sibling # "next_sibling" is used for reading the value after <br> tag
+else:
+    sum = soup.select(sumSelector)
+    sum = [r.text.strip() for r in sum]
+print("Toplam Ödenecek Tutar", sum)
