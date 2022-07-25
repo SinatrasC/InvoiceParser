@@ -1,5 +1,3 @@
-import io
-import requests
 from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
 from pdfminer.converter import HTMLConverter
 from pdfminer.layout import LAParams
@@ -8,10 +6,12 @@ from bs4 import BeautifulSoup
 from matplotlib import pyplot as plt
 import datetime as dt
 import numpy as np
-import os
-import re
 import configparser
 import sqlite3
+import requests
+import io
+import os
+import re
 
 #  Load Config
 config = configparser.ConfigParser()
@@ -121,21 +121,67 @@ for i in loop:
         
 sumSelector = sum_selector  # Selector for price summary, static for now will be dynamic with after config implementation
 if "br" in sumSelector:
-    sum = soup.select(sumSelector)[0].next_sibling # "next_sibling" is used for reading the value after <br> tag
+    sumPrice = soup.select(sumSelector)[0].next_sibling # "next_sibling" is used for reading the value after <br> tag
+    sumPrice = str(sumPrice)
+    flags = config.items( "Currencies" )
+    for key, flag in flags:
+        matches = str(config[flag]["match"])
+        matches = matches.split(',')
+        for i in matches:
+            if(re.search(re.compile(i), sumPrice)):
+                currency = flag
+                break
+    sumPrice = sumPrice.replace(",", ".")
+    sumPrice = float(re.search(r"[-+]?\d*\.\d+|\d+", sumPrice).group(0))
 else:
-    sum = soup.select(sumSelector)
-    sum = [r.text.strip() for r in sum]
-print("Toplam Ödenecek Tutar", sum)
+    sumPrice = soup.select(sumSelector)
+    sumPrice = [r.text.strip() for r in sumPrice]
+    sumPrice = str(sumPrice)
+    flags = config.items( "Currencies" )
+    for key, flag in flags:
+        matches = str(config[flag]["match"])
+        matches = matches.split(',')
+        for i in matches:
+            if(re.search(re.compile(i), sumPrice)):
+                currency = flag
+                break
+    sumPrice = sumPrice.replace(",", ".")
+    sumPrice = float(re.search(r"[-+]?\d*\.\d+|\d+", sumPrice).group(0))
+print("Toplam Ödenecek Tutar", sumPrice)
+print("Para Birimi", currency)
 
 if mul_sum:
     sumSelector2 = sum_selector2  # Selector for price summary, static for now will be dynamic with after config implementation
     if "br" in sumSelector2:
-        sum2 = soup.select(sumSelector2)[0].next_sibling # "next_sibling" is used for reading the value after <br> tag
+        sumPrice2 = soup.select(sumSelector2)[0].next_sibling # "next_sibling" is used for reading the value after <br> tag
+        sumPrice2 = str(sumPrice2)
+        flags = config.items( "Currencies" )
+        for key, flag in flags:
+            matches = str(config[flag]["match"])
+            matches = matches.split(',')
+            for i in matches:
+                if(re.search(re.compile(i), sumPrice2)):
+                    currency2 = flag
+                    break
+        sumPrice2 = sumPrice2.replace(",", ".")
+        sumPrice2 = float(re.search(r"[-+]?\d*\.\d+|\d+", sumPrice2).group(0))
     else:
-        sum2 = soup.select(sumSelector2)
-        sum2 = [r.text.strip() for r in sum2]
-    print("Toplam Ödenecek Tutar (Optional)", sum2)
-
+        sumPrice2 = soup.select(sumSelector2)
+        sumPrice2 = [r.text.strip() for r in sumPrice2]
+        sumPrice2 = str(sumPrice2)
+        flags = config.items( "Currencies" )
+        for key, flag in flags:
+            matches = str(config[flag]["match"])
+            matches = matches.split(',')
+            for i in matches:
+                if(re.search(re.compile(i), sumPrice2)):
+                    currency2 = flag
+                    break
+        sumPrice2 = sumPrice2.replace(",", ".")
+        sumPrice2 = float(re.search(r"[-+]?\d*\.\d+|\d+", sumPrice2).group(0))
+    print("Toplam Ödenecek Tutar (Optional)", sumPrice2)
+    print("Para Birimi (Optional)", currency2)
+    
 ### Database Insertion Stage ###
 conn = sqlite3.connect('invoices.db')
 c = conn.cursor()
@@ -144,28 +190,29 @@ c.execute("""CREATE TABLE IF NOT EXISTS summaries(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     date TEXT,
     company TEXT,
-    sum TEXT,
+    sum FLOAT,
     sum_currency TEXT,
-    sum_mul TEXT,
+    sum_mul FLOAT,
     sum_mul_currency TEXT
     )""")
 conn.commit()
 # Create products table within desired format if it doesnt exist
 c.execute("""CREATE TABLE IF NOT EXISTS products(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        date TEXT,
-        company TEXT,
-        package TEXT,
-        price TEXT,
-        price_currency TEXT
-        )""")
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    date TEXT,
+    company TEXT,
+    package TEXT,
+    price TEXT,
+    price_currency TEXT
+    )""")
 conn.commit()
 # Insert date company and sum lists to summaries table
 if mul_sum:
-    c.execute("INSERT INTO summaries VALUES(NULL,?,?,?,?,?,?)", (str(date), template, str(sum), "$", str(sum2), "€"))
+    c.execute("INSERT INTO summaries VALUES(NULL,?,?,?,?,?,?)", (str(date), template, sumPrice, currency, sumPrice2, currency2))
 else:
-    c.execute("INSERT INTO summaries VALUES(NULL,?,?,?,?,?,?)", (str(date), template, str(sum), "$", "None", "None"))
+    c.execute("INSERT INTO summaries VALUES(NULL,?,?,?,?,?,?)", (str(date), template, sumPrice, currency, 0, "None"))
 conn.commit()
+
 # Insert package and price lists to products table
 if mul_sum:
     for i in range(len(packages)):
