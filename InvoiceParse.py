@@ -8,8 +8,10 @@ import datetime as dt
 import numpy as np
 import configparser
 import sqlite3
+from pkg_resources import cleanup_resources
 import requests
 import io
+import sys
 import os
 import re
 
@@ -143,7 +145,6 @@ for i in loop:
     price = str(price)
     price = price.replace(",", ".")
     price = float(re.search(r"[-+]?\d*\.\d+|\d+", price).group(0))
-    #save package and price to a list
     packages.append(package)
     prices.append(price)
         
@@ -238,32 +239,53 @@ conn.commit()
 if mul_sum:
     c.execute("INSERT INTO summaries VALUES(NULL,?,?,?,?,?,?)", (str(dateFormatted), template, sumPrice, currency, sumPrice2, currency2))
 else:
-    c.execute("INSERT INTO summaries VALUES(NULL,?,?,?,?,?,?)", (str(dateFormatted), template, sumPrice, currency, 0, "None"))
+    c.execute("INSERT INTO summaries VALUES(NULL,?,?,?,?,NULL,?)", (str(dateFormatted), template, sumPrice, currency, "None"))
 conn.commit()
 
 # Insert package and price lists to products table
 if mul_sum:
     for i in range(len(packages)):
-        c.execute("INSERT INTO products VALUES(NULL,?,?,?,?,?)", (str(dateFormatted), template, str(packages[i]), float(prices[i]), currency))
+        cleanPackages = str(packages[i])
+        cleanPackages = cleanPackages.replace("['", "")
+        cleanPackages = cleanPackages.replace("']", "")
+        c.execute("INSERT INTO products VALUES(NULL,?,?,?,?,?)", (str(dateFormatted), template, cleanPackages, float(prices[i]), currency))
 else:
     for i in range(len(packages)):
-        c.execute("INSERT INTO products VALUES(NULL,?,?,?,?,?)", (str(dateFormatted), template, str(packages[i]), float(prices[i]), currency))
+        cleanPackages = str(packages[i])
+        cleanPackages = cleanPackages.replace("['", "")
+        cleanPackages = cleanPackages.replace("']", "")
+        c.execute("INSERT INTO products VALUES(NULL,?,?,?,?,?)", (str(dateFormatted), template, cleanPackages, float(prices[i]), currency))
 conn.commit()
 conn.close()
 
 ### Currency Conversion Stage ###
 # Load Currency Conversion Rates from api.exchangerate.host
-date = "2020-04-04"
-fromc = "USD"
-toc = "TRY"
-amount = 1
+date = re.search(r"(\d\d\d\d)(.)(\d\d)(.)(\d\d)", str(dateFormatted)).group(0)
+if (currency == "TRY"):
+    fromc = "TRY"
+    toc = "USD"
+elif (currency == "USD"):
+    fromc = "USD"
+    toc = "TRY"
+    
+amount = sumPrice
 url = "https://api.exchangerate.host/" + str(date) + "?base=" + fromc + "&symbols="+ toc
-response = requests.get(url)
-data = response.json()
-rate = str(data['rates'])
-rate = float(rate.replace("{'TRY': ", "").replace("}", ""))
-print("USD to TL price", rate*amount)
 
+try:
+    response = requests.get(url)
+    data = response.json()
+except:
+    print("Currency Conversion Failed (API Error)")
+    sys.exit()
+    
+rate = str(data['rates'])
+
+if (currency == "TRY"):
+    rate = float(rate.replace("{'USD': ", "").replace("}", ""))
+    print("USD Fiyat", rate*amount)
+elif (currency == "USD"):
+    rate = float(rate.replace("{'TRY': ", "").replace("}", ""))
+    print("TRY Fiyat", rate*amount)
 
 ### Database Read Stage ###
 conn = sqlite3.connect('invoices.db')
