@@ -103,6 +103,10 @@ elif (re.search(r"(\d\d\d\d)(.)(\d\d)(.)(\d\d)", date)):
     regex = re.search(r"(\d\d\d\d)(.)(\d\d)(.)(\d\d)", date)
     dateFormatted = regex.group(5) + " " + regex.group(3) + " " + regex.group(1)
     dateFormatted = dt.datetime.strptime(dateFormatted, '%d %m %Y')
+elif (re.search(r"(\d\d.)(January|February|March|April|May|June|July|August|September|October|November|December)(.\d\d\d\d)", date)):
+    regex = re.search(r"(\d\d)(January|February|March|April|May|June|July|August|September|October|November|December)(.\d\d\d\d)", date)
+    dateFormatted = regex.group(0)
+    dateFormatted = dt.datetime.strptime(dateFormatted, '%d %B %Y')
 else:
     print ("Error : Date format is not recognized")
     exit()
