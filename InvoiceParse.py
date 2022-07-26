@@ -86,7 +86,28 @@ else:
     date = [r.text.strip() for r in date]
     #parse date as datetime object
     #date = dt.datetime.strptime(date[0], '%d.%m.%Y')
-print("Fatura Tarihi", date)
+    
+if (re.search(r"(\d\d)(.)(\d\d)(.)(\d\d\d\d)", date)):
+    regex = re.search(r"(\d\d)(.)(\d\d)(.)(\d\d\d\d)", date)
+    dateFormatted = regex.group(1) + " " + regex.group(3) + " " + regex.group(5)
+    dateFormatted = dt.datetime.strptime(dateFormatted, '%d %m %Y')
+elif (re.search(r"(\d\d.)(Ocak|Şubat|Mart|Nisan|Mayıs|Haziran|Temmuz|Ağustos|Eylül|Ekim|Kasım|Aralık)(.\d\d\d\d)", date)):
+    regex = re.search(r"(\d\d.)(Ocak|Şubat|Mart|Nisan|Mayıs|Haziran|Temmuz|Ağustos|Eylül|Ekim|Kasım|Aralık)(.\d\d\d\d)", date)
+    dateFormatted = regex.group(0)
+    dateFormatted = dt.datetime.strptime(dateFormatted, '%d %B %Y')
+elif (re.search(r"(\d\d.)(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)(.\d\d\d\d)", date)):
+    regex = re.search(r"(\d\d.)(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)(.\d\d\d\d)", date)
+    dateFormatted = regex.group(0)
+    dateFormatted = dt.datetime.strptime(dateFormatted, '%d %b %Y')
+elif (re.search(r"(\d\d\d\d)(.)(\d\d)(.)(\d\d)", date)):
+    regex = re.search(r"(\d\d\d\d)(.)(\d\d)(.)(\d\d)", date)
+    dateFormatted = regex.group(5) + " " + regex.group(3) + " " + regex.group(1)
+    dateFormatted = dt.datetime.strptime(dateFormatted, '%d %m %Y')
+else:
+    print ("Error : Date format is not recognized")
+    exit()
+
+print("Fatura Tarihi", dateFormatted)
 
 i = packages_index   # CSS index loop counter for Packages
 z = prices_index  # CSS index loop counter for Prices
@@ -97,7 +118,7 @@ prices = []
 
 loop = range(loop_range_start, loop_range_end)   # Temp loop stop rule until determining empty rows     
 for i in loop:
-    packageSelector = packages_selector_s1
+    packageSelector = packages_selector_s1 
     packageSelector += str(i)
     packageSelector += packages_selector_s2
     package = soup.select(packageSelector)
@@ -211,18 +232,18 @@ c.execute("""CREATE TABLE IF NOT EXISTS products(
 conn.commit()
 # Insert date company and sum lists to summaries table
 if mul_sum:
-    c.execute("INSERT INTO summaries VALUES(NULL,?,?,?,?,?,?)", (str(date), template, sumPrice, currency, sumPrice2, currency2))
+    c.execute("INSERT INTO summaries VALUES(NULL,?,?,?,?,?,?)", (str(dateFormatted), template, sumPrice, currency, sumPrice2, currency2))
 else:
-    c.execute("INSERT INTO summaries VALUES(NULL,?,?,?,?,?,?)", (str(date), template, sumPrice, currency, 0, "None"))
+    c.execute("INSERT INTO summaries VALUES(NULL,?,?,?,?,?,?)", (str(dateFormatted), template, sumPrice, currency, 0, "None"))
 conn.commit()
 
 # Insert package and price lists to products table
 if mul_sum:
     for i in range(len(packages)):
-        c.execute("INSERT INTO products VALUES(NULL,?,?,?,?,?)", (str(date), template, str(packages[i]), float(prices[i]), currency))
+        c.execute("INSERT INTO products VALUES(NULL,?,?,?,?,?)", (str(dateFormatted), template, str(packages[i]), float(prices[i]), currency))
 else:
     for i in range(len(packages)):
-        c.execute("INSERT INTO products VALUES(NULL,?,?,?,?,?)", (str(date), template, str(packages[i]), float(prices[i]), currency))
+        c.execute("INSERT INTO products VALUES(NULL,?,?,?,?,?)", (str(dateFormatted), template, str(packages[i]), float(prices[i]), currency))
 conn.commit()
 conn.close()
 
