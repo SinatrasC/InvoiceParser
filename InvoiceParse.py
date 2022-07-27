@@ -254,7 +254,42 @@ conn.commit()
 if mul_sum:
     c.execute("INSERT INTO summaries VALUES(NULL,?,?,?,?,?,?)", (str(dateFormatted), template, sumPrice, currency, sumPrice2, currency2))
 else:
-    c.execute("INSERT INTO summaries VALUES(NULL,?,?,?,?,NULL,?)", (str(dateFormatted), template, sumPrice, currency, "None"))
+    if(autoCurrencyConversion):
+        ### Currency Conversion Stage ###
+        # Load Currency Conversion Rates from api.exchangerate.host
+        date = re.search(r"(\d\d\d\d)(.)(\d\d)(.)(\d\d)", str(dateFormatted)).group(0)
+        if (currency == "TRY"):
+            fromc = "TRY"
+            toc = "USD"
+        elif (currency == "USD"):
+            fromc = "USD"
+            toc = "TRY"
+        amount = sumPrice
+        url = "https://api.exchangerate.host/" + str(date) + "?base=" + fromc + "&symbols="+ toc
+        try:
+            response = requests.get(url)
+            data = response.json()
+        except:
+            print("Currency Conversion Failed (API Error)")
+            sys.exit()
+    
+        rate = str(data['rates'])
+
+        if (currency == "TRY"):
+            rate = float(rate.replace("{'USD': ", "").replace("}", ""))
+            currency2 = "USD"
+            sumPrice2 = rate*amount
+        elif (currency == "USD"):
+            rate = float(rate.replace("{'TRY': ", "").replace("}", ""))
+            currency2 = "TRY"
+            sumPrice2 = rate*amount
+        else:
+            print("Currency Conversion Failed (Currency Error)")
+            sys.exit()
+
+        c.execute("INSERT INTO summaries VALUES(NULL,?,?,?,?,?,?)", (str(dateFormatted), template, sumPrice, currency, sumPrice2, currency2))
+    else: 
+        c.execute("INSERT INTO summaries VALUES(NULL,?,?,?,?,NULL,?)", (str(dateFormatted), template, sumPrice, currency, "None"))
 conn.commit()
 
 # Insert package and price lists to products table
@@ -273,36 +308,8 @@ else:
 conn.commit()
 conn.close()
 
-### Currency Conversion Stage ###
-# Load Currency Conversion Rates from api.exchangerate.host
-date = re.search(r"(\d\d\d\d)(.)(\d\d)(.)(\d\d)", str(dateFormatted)).group(0)
-if (currency == "TRY"):
-    fromc = "TRY"
-    toc = "USD"
-elif (currency == "USD"):
-    fromc = "USD"
-    toc = "TRY"
-    
-amount = sumPrice
-url = "https://api.exchangerate.host/" + str(date) + "?base=" + fromc + "&symbols="+ toc
 
-# ToDo : autoCurrencyConversion trigger will be here
 
-try:
-    response = requests.get(url)
-    data = response.json()
-except:
-    print("Currency Conversion Failed (API Error)")
-    sys.exit()
-    
-rate = str(data['rates'])
-
-if (currency == "TRY"):
-    rate = float(rate.replace("{'USD': ", "").replace("}", ""))
-    print("USD Fiyat", rate*amount)
-elif (currency == "USD"):
-    rate = float(rate.replace("{'TRY': ", "").replace("}", ""))
-    print("TRY Fiyat", rate*amount)
 
 ### Database Read Stage ###
 conn = sqlite3.connect('invoices.db')
