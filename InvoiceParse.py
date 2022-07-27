@@ -38,7 +38,12 @@ def convert2html(fname, pages=None):
     return HtmlConverted
 
 path = "C:\\Users\\Emin\\Desktop\\InvoiceParse"
-fileIn= "BE02019000688551"
+#fileIn= "e-Fatura"
+fileIn= "ShowXML"
+#fileIn= "e-FaturaGFW"
+#fileIn= "ShowXMLtt"
+#fileIn= "e-Fatura622"
+#fileIn= "BE02019000688551"
 #fileIn= "53727368"
 fileOut =path+"/"+fileIn+".html"
 filePDF=path+"/"+fileIn+".pdf"
@@ -100,24 +105,24 @@ else:
     #parse date as datetime object
     #date = dt.datetime.strptime(date[0], '%d.%m.%Y')
     
-if (re.search(r"(\d\d)(.)(\d\d)(.)(\d\d\d\d)", date)):
-    regex = re.search(r"(\d\d)(.)(\d\d)(.)(\d\d\d\d)", date)
+if (re.search(r"(\d\d)(.)(\d\d)(.)(\d\d\d\d)", str(date))):
+    regex = re.search(r"(\d\d)(.)(\d\d)(.)(\d\d\d\d)", str(date))
     dateFormatted = regex.group(1) + " " + regex.group(3) + " " + regex.group(5)
     dateFormatted = dt.datetime.strptime(dateFormatted, '%d %m %Y')
-elif (re.search(r"(\d\d.)(Ocak|Şubat|Mart|Nisan|Mayıs|Haziran|Temmuz|Ağustos|Eylül|Ekim|Kasım|Aralık)(.\d\d\d\d)", date)):
-    regex = re.search(r"(\d\d.)(Ocak|Şubat|Mart|Nisan|Mayıs|Haziran|Temmuz|Ağustos|Eylül|Ekim|Kasım|Aralık)(.\d\d\d\d)", date)
+elif (re.search(r"(\d\d.)(Ocak|Şubat|Mart|Nisan|Mayıs|Haziran|Temmuz|Ağustos|Eylül|Ekim|Kasım|Aralık)(.\d\d\d\d)", str(date))):
+    regex = re.search(r"(\d\d.)(Ocak|Şubat|Mart|Nisan|Mayıs|Haziran|Temmuz|Ağustos|Eylül|Ekim|Kasım|Aralık)(.\d\d\d\d)", str(date))
     dateFormatted = regex.group(0)
     dateFormatted = dt.datetime.strptime(dateFormatted, '%d %B %Y')
-elif (re.search(r"(\d\d.)(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)(.\d\d\d\d)", date)):
-    regex = re.search(r"(\d\d.)(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)(.\d\d\d\d)", date)
+elif (re.search(r"(\d\d.)(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)(.\d\d\d\d)", str(date))):
+    regex = re.search(r"(\d\d.)(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)(.\d\d\d\d)", str(date))
     dateFormatted = regex.group(0)
     dateFormatted = dt.datetime.strptime(dateFormatted, '%d %b %Y')
-elif (re.search(r"(\d\d\d\d)(.)(\d\d)(.)(\d\d)", date)):
-    regex = re.search(r"(\d\d\d\d)(.)(\d\d)(.)(\d\d)", date)
+elif (re.search(r"(\d\d\d\d)(.)(\d\d)(.)(\d\d)", str(date))):
+    regex = re.search(r"(\d\d\d\d)(.)(\d\d)(.)(\d\d)", str(date))
     dateFormatted = regex.group(5) + " " + regex.group(3) + " " + regex.group(1)
     dateFormatted = dt.datetime.strptime(dateFormatted, '%d %m %Y')
-elif (re.search(r"(\d\d.)(January|February|March|April|May|June|July|August|September|October|November|December)(.\d\d\d\d)", date)):
-    regex = re.search(r"(\d\d)(January|February|March|April|May|June|July|August|September|October|November|December)(.\d\d\d\d)", date)
+elif (re.search(r"(\d\d.)(January|February|March|April|May|June|July|August|September|October|November|December)(.\d\d\d\d)", str(date))):
+    regex = re.search(r"(\d\d)(January|February|March|April|May|June|July|August|September|October|November|December)(.\d\d\d\d)", str(date))
     dateFormatted = regex.group(0)
     dateFormatted = dt.datetime.strptime(dateFormatted, '%d %B %Y')
 else:
@@ -152,9 +157,10 @@ for i in loop:
     z = z + 1   # Increment index of Prices CSS Selector to adress next row/price
     
     print("Paket :", str(package), "Fiyatı :", price)
-
     price = str(price)
-    price = price.replace(",", ".")
+    if (re.search(r"(\.)(.*,)", price)):
+        price = price.replace(".", "")
+    sprice = price.replace(",", ".")
     price = float(re.search(r"[-+]?\d*\.\d+|\d+", price).group(0))
     packages.append(package)
     prices.append(price)
@@ -171,6 +177,8 @@ if "br" in sumSelector:
             if(re.search(re.compile(i), sumPrice)):
                 currency = flag
                 break
+    if (re.search(r"(\.)(.*,)", sumPrice)):
+        sumPrice = sumPrice.replace(".", "")
     sumPrice = sumPrice.replace(",", ".")
     sumPrice = float(re.search(r"[-+]?\d*\.\d+|\d+", sumPrice).group(0))
 else:
@@ -185,6 +193,8 @@ else:
             if(re.search(re.compile(i), sumPrice)):
                 currency = flag
                 break
+    if (re.search(r"(\.)(.*,)", sumPrice)):
+        sumPrice = sumPrice.replace(".", "")
     sumPrice = sumPrice.replace(",", ".")
     sumPrice = float(re.search(r"[-+]?\d*\.\d+|\d+", sumPrice).group(0))
 print("Toplam Ödenecek Tutar", sumPrice)
@@ -203,6 +213,8 @@ if mul_sum:
                 if(re.search(re.compile(i), sumPrice2)):
                     currency2 = flag
                     break
+        if (re.search(r"(\.)(.*,)", sumPrice2)):
+            sumPrice2 = sumPrice2.replace(".", " ")
         sumPrice2 = sumPrice2.replace(",", ".")
         sumPrice2 = float(re.search(r"[-+]?\d*\.\d+|\d+", sumPrice2).group(0))
     else:
@@ -217,6 +229,8 @@ if mul_sum:
                 if(re.search(re.compile(i), sumPrice2)):
                     currency2 = flag
                     break
+        if (re.search(r"(\.)(.*,)", sumPrice2)):
+            sumPrice2 = sumPrice2.replace(".", " ")
         sumPrice2 = sumPrice2.replace(",", ".")
         sumPrice2 = float(re.search(r"[-+]?\d*\.\d+|\d+", sumPrice2).group(0))
     print("Toplam Ödenecek Tutar (Optional)", sumPrice2)
@@ -298,18 +312,22 @@ if mul_sum:
         cleanPackages = str(packages[i])
         cleanPackages = cleanPackages.replace("['", "")
         cleanPackages = cleanPackages.replace("']", "")
+        cleanPackages = cleanPackages.replace("[\"", "")
+        cleanPackages = cleanPackages.replace("\"]", "")
+        cleanPackages = cleanPackages.replace("\\n", " ")                                     
         c.execute("INSERT INTO products VALUES(NULL,?,?,?,?,?)", (str(dateFormatted), template, cleanPackages, float(prices[i]), currency))
 else:
     for i in range(len(packages)):
+        print(prices)
         cleanPackages = str(packages[i])
         cleanPackages = cleanPackages.replace("['", "")
         cleanPackages = cleanPackages.replace("']", "")
+        cleanPackages = cleanPackages.replace("[\"", "")
+        cleanPackages = cleanPackages.replace("\"]", "")
+        cleanPackages = cleanPackages.replace("\\n", " ")    
         c.execute("INSERT INTO products VALUES(NULL,?,?,?,?,?)", (str(dateFormatted), template, cleanPackages, float(prices[i]), currency))
 conn.commit()
 conn.close()
-
-
-
 
 ### Database Read Stage ###
 conn = sqlite3.connect('invoices.db')
