@@ -25,13 +25,14 @@ def convert2html(fname, pages=None):
     pagenums = set()     
     manager = PDFResourceManager()
     output = io.BytesIO()
+
     converter = HTMLConverter(manager, output, codec='utf-8', laparams=LAParams())
     interpreter = PDFPageInterpreter(manager, converter)  
     infile = open(fname, 'rb')
     ### As invoices could be multiple pages and its number is not static determining a for loop for each page
-    for page in PDFPage.get_pages(infile, pagenums,caching=True, check_extractable=True):
+    for page in PDFPage.get_pages(infile, pagenums, password=pdfPassword, caching=True, check_extractable=True):
         interpreter.process_page(page)
- 
+
     HtmlConverted = output.getvalue()  
     infile.close(); converter.close(); output.close()
     return HtmlConverted
@@ -41,6 +42,16 @@ fileIn= "BE02019000688551"
 #fileIn= "53727368"
 fileOut =path+"/"+fileIn+".html"
 filePDF=path+"/"+fileIn+".pdf"
+
+#  Load General Settings
+keepConvertedHtml = config.getboolean('GeneralSettings','keepConvertedHtml')
+autoCurrencyConversion = config.getboolean('GeneralSettings','autoCurrencyConversion')
+pdfPasswordSupport = config.getboolean('GeneralSettings','pdfPasswordSupport')
+
+if(pdfPasswordSupport):
+    pdfPassword = config.get('GeneralSettings','pdfPassword')
+else:
+    pdfPassword = ""
 
 covertedHTML = convert2html(filePDF, pages=None)
 fileConverted = open(fileOut, "wb")
@@ -210,7 +221,11 @@ if mul_sum:
         sumPrice2 = float(re.search(r"[-+]?\d*\.\d+|\d+", sumPrice2).group(0))
     print("Toplam Ödenecek Tutar (Optional)", sumPrice2)
     print("Para Birimi (Optional)", currency2)
-    
+
+# Decide to use temp file or keep file in path
+if(keepConvertedHtml == False):
+    os.unlink(fileOut)
+
 ### Database Insertion Stage ###
 conn = sqlite3.connect('invoices.db')
 c = conn.cursor()
@@ -270,6 +285,8 @@ elif (currency == "USD"):
     
 amount = sumPrice
 url = "https://api.exchangerate.host/" + str(date) + "?base=" + fromc + "&symbols="+ toc
+
+# ToDo : autoCurrencyConversion trigger will be here
 
 try:
     response = requests.get(url)
