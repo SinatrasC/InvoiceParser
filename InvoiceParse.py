@@ -265,7 +265,7 @@ else:
             fromc = "USD"
             toc = "TRY"
         amount = sumPrice
-        url = "https://api.exchangerate.host/" + str(date) + "?base=" + fromc + "&symbols="+ toc
+        url = "https://api.exchangerate.host/" + str(date) + "?base=" + fromc + "&symbols="+ toc + "&amount=" + str(amount) + "&places=3"
         try:
             response = requests.get(url)
             data = response.json()
@@ -278,11 +278,11 @@ else:
         if (currency == "TRY"):
             rate = float(rate.replace("{'USD': ", "").replace("}", ""))
             currency2 = "USD"
-            sumPrice2 = rate*amount
+            sumPrice2 = rate
         elif (currency == "USD"):
             rate = float(rate.replace("{'TRY': ", "").replace("}", ""))
             currency2 = "TRY"
-            sumPrice2 = rate*amount
+            sumPrice2 = rate
         else:
             print("Currency Conversion Failed (Currency Error)")
             sys.exit()
