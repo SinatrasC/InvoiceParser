@@ -37,6 +37,58 @@ def convert2html(fname, pages=None):
     infile.close(); converter.close(); output.close()
     return HtmlConverted
 
+def parse_date(date):
+    if (re.search(r"(\d\d)(.)(\d\d)(.)(\d\d\d\d)", str(date))):
+        regex = re.search(r"(\d\d)(.)(\d\d)(.)(\d\d\d\d)", str(date))
+        dateFormatted = regex.group(1) + " " + regex.group(3) + " " + regex.group(5)
+        dateFormatted = dt.datetime.strptime(dateFormatted, '%d %m %Y')
+    elif (re.search(r"(\d\d.)(Ocak|Şubat|Mart|Nisan|Mayıs|Haziran|Temmuz|Ağustos|Eylül|Ekim|Kasım|Aralık)(.\d\d\d\d)", str(date))):
+        regex = re.search(r"(\d\d.)(Ocak|Şubat|Mart|Nisan|Mayıs|Haziran|Temmuz|Ağustos|Eylül|Ekim|Kasım|Aralık)(.\d\d\d\d)", str(date))
+        dateFormatted = regex.group(0)
+        dateFormatted = dt.datetime.strptime(dateFormatted, '%d %B %Y')
+    elif (re.search(r"(\d\d.)(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)(.\d\d\d\d)", str(date))):
+        regex = re.search(r"(\d\d.)(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)(.\d\d\d\d)", str(date))
+        dateFormatted = regex.group(0)
+        dateFormatted = dt.datetime.strptime(dateFormatted, '%d %b %Y')
+    elif (re.search(r"(\d\d\d\d)(.)(\d\d)(.)(\d\d)", str(date))):
+        regex = re.search(r"(\d\d\d\d)(.)(\d\d)(.)(\d\d)", str(date))
+        dateFormatted = regex.group(5) + " " + regex.group(3) + " " + regex.group(1)
+        dateFormatted = dt.datetime.strptime(dateFormatted, '%d %m %Y')
+    elif (re.search(r"(\d\d.)(January|February|March|April|May|June|July|August|September|October|November|December)(.\d\d\d\d)", str(date))):
+        regex = re.search(r"(\d\d)(January|February|March|April|May|June|July|August|September|October|November|December)(.\d\d\d\d)", str(date))
+        dateFormatted = regex.group(0)
+        dateFormatted = dt.datetime.strptime(dateFormatted, '%d %B %Y')
+    else:
+        print ("Error : Date format is not recognized")
+        exit()
+    return dateFormatted
+
+def parse_price(price):
+    if (re.search(r"(\.)(.*,)", price)):
+        price = price.replace(".", "")
+    price = price.replace(",", ".")
+    price = float(re.search(r"[-+]?\d*\.\d+|\d+", price).group(0))
+    return price
+
+def find_currency(price):
+    flags = config.items( "Currencies" )
+    for key, flag in flags:
+        matches = str(config[flag]["match"])
+        matches = matches.split(',')
+        for i in matches:
+            if(re.search(re.compile(i), price)):
+                currency = flag
+                break
+    return currency
+
+def clean_list(element):
+    element = element.replace("['", "")
+    element = element.replace("']", "")
+    element = element.replace("[\"", "")
+    element = element.replace("\"]", "")
+    element = element.replace("\\n", " ")
+    return element
+
 path = "C:\\Users\\Emin\\Desktop\\InvoiceParse"
 #fileIn= "e-Fatura"
 fileIn= "ShowXML"
@@ -99,35 +151,11 @@ if mul_sum:
 dateSelector = date_selector   # Selector for invoice date, static for now will be dynamic with after config implementation
 if "br" in dateSelector:
     date = soup.select(dateSelector)[0].next_sibling # "next_sibling" is used for reading the value after <br> tag in case there is a br tag in our selector
+    dateFormatted = parse_date(date)
 else:
     date = soup.select(dateSelector)
     date = [r.text.strip() for r in date]
-    #parse date as datetime object
-    #date = dt.datetime.strptime(date[0], '%d.%m.%Y')
-    
-if (re.search(r"(\d\d)(.)(\d\d)(.)(\d\d\d\d)", str(date))):
-    regex = re.search(r"(\d\d)(.)(\d\d)(.)(\d\d\d\d)", str(date))
-    dateFormatted = regex.group(1) + " " + regex.group(3) + " " + regex.group(5)
-    dateFormatted = dt.datetime.strptime(dateFormatted, '%d %m %Y')
-elif (re.search(r"(\d\d.)(Ocak|Şubat|Mart|Nisan|Mayıs|Haziran|Temmuz|Ağustos|Eylül|Ekim|Kasım|Aralık)(.\d\d\d\d)", str(date))):
-    regex = re.search(r"(\d\d.)(Ocak|Şubat|Mart|Nisan|Mayıs|Haziran|Temmuz|Ağustos|Eylül|Ekim|Kasım|Aralık)(.\d\d\d\d)", str(date))
-    dateFormatted = regex.group(0)
-    dateFormatted = dt.datetime.strptime(dateFormatted, '%d %B %Y')
-elif (re.search(r"(\d\d.)(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)(.\d\d\d\d)", str(date))):
-    regex = re.search(r"(\d\d.)(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)(.\d\d\d\d)", str(date))
-    dateFormatted = regex.group(0)
-    dateFormatted = dt.datetime.strptime(dateFormatted, '%d %b %Y')
-elif (re.search(r"(\d\d\d\d)(.)(\d\d)(.)(\d\d)", str(date))):
-    regex = re.search(r"(\d\d\d\d)(.)(\d\d)(.)(\d\d)", str(date))
-    dateFormatted = regex.group(5) + " " + regex.group(3) + " " + regex.group(1)
-    dateFormatted = dt.datetime.strptime(dateFormatted, '%d %m %Y')
-elif (re.search(r"(\d\d.)(January|February|March|April|May|June|July|August|September|October|November|December)(.\d\d\d\d)", str(date))):
-    regex = re.search(r"(\d\d)(January|February|March|April|May|June|July|August|September|October|November|December)(.\d\d\d\d)", str(date))
-    dateFormatted = regex.group(0)
-    dateFormatted = dt.datetime.strptime(dateFormatted, '%d %B %Y')
-else:
-    print ("Error : Date format is not recognized")
-    exit()
+    dateFormatted = parse_date(date)
 
 print("Fatura Tarihi", dateFormatted)
 
@@ -157,46 +185,22 @@ for i in loop:
     z = z + 1   # Increment index of Prices CSS Selector to adress next row/price
     
     print("Paket :", str(package), "Fiyatı :", price)
-    price = str(price)
-    if (re.search(r"(\.)(.*,)", price)):
-        price = price.replace(".", "")
-    sprice = price.replace(",", ".")
-    price = float(re.search(r"[-+]?\d*\.\d+|\d+", price).group(0))
+
+    price = parse_price(str(price))
     packages.append(package)
     prices.append(price)
         
 sumSelector = sum_selector  # Selector for price summary, static for now will be dynamic with after config implementation
 if "br" in sumSelector:
     sumPrice = soup.select(sumSelector)[0].next_sibling # "next_sibling" is used for reading the value after <br> tag
-    sumPrice = str(sumPrice)
-    flags = config.items( "Currencies" )
-    for key, flag in flags:
-        matches = str(config[flag]["match"])
-        matches = matches.split(',')
-        for i in matches:
-            if(re.search(re.compile(i), sumPrice)):
-                currency = flag
-                break
-    if (re.search(r"(\.)(.*,)", sumPrice)):
-        sumPrice = sumPrice.replace(".", "")
-    sumPrice = sumPrice.replace(",", ".")
-    sumPrice = float(re.search(r"[-+]?\d*\.\d+|\d+", sumPrice).group(0))
+    currency = find_currency(str(sumPrice))
+    sumPrice = parse_price(str(sumPrice))
 else:
     sumPrice = soup.select(sumSelector)
     sumPrice = [r.text.strip() for r in sumPrice]
-    sumPrice = str(sumPrice)
-    flags = config.items( "Currencies" )
-    for key, flag in flags:
-        matches = str(config[flag]["match"])
-        matches = matches.split(',')
-        for i in matches:
-            if(re.search(re.compile(i), sumPrice)):
-                currency = flag
-                break
-    if (re.search(r"(\.)(.*,)", sumPrice)):
-        sumPrice = sumPrice.replace(".", "")
-    sumPrice = sumPrice.replace(",", ".")
-    sumPrice = float(re.search(r"[-+]?\d*\.\d+|\d+", sumPrice).group(0))
+    currency = find_currency(str(sumPrice))
+    sumPrice = parse_price(str(sumPrice))
+
 print("Toplam Ödenecek Tutar", sumPrice)
 print("Para Birimi", currency)
 
@@ -204,35 +208,14 @@ if mul_sum:
     sumSelector2 = sum_selector2  # Selector for price summary, static for now will be dynamic with after config implementation
     if "br" in sumSelector2:
         sumPrice2 = soup.select(sumSelector2)[0].next_sibling # "next_sibling" is used for reading the value after <br> tag
-        sumPrice2 = str(sumPrice2)
-        flags = config.items( "Currencies" )
-        for key, flag in flags:
-            matches = str(config[flag]["match"])
-            matches = matches.split(',')
-            for i in matches:
-                if(re.search(re.compile(i), sumPrice2)):
-                    currency2 = flag
-                    break
-        if (re.search(r"(\.)(.*,)", sumPrice2)):
-            sumPrice2 = sumPrice2.replace(".", " ")
-        sumPrice2 = sumPrice2.replace(",", ".")
-        sumPrice2 = float(re.search(r"[-+]?\d*\.\d+|\d+", sumPrice2).group(0))
+        currency2 = find_currency(str(sumPrice2))
+        sumPrice2 = parse_price(str(sumPrice2))
     else:
         sumPrice2 = soup.select(sumSelector2)
         sumPrice2 = [r.text.strip() for r in sumPrice2]
-        sumPrice2 = str(sumPrice2)
-        flags = config.items( "Currencies" )
-        for key, flag in flags:
-            matches = str(config[flag]["match"])
-            matches = matches.split(',')
-            for i in matches:
-                if(re.search(re.compile(i), sumPrice2)):
-                    currency2 = flag
-                    break
-        if (re.search(r"(\.)(.*,)", sumPrice2)):
-            sumPrice2 = sumPrice2.replace(".", " ")
-        sumPrice2 = sumPrice2.replace(",", ".")
-        sumPrice2 = float(re.search(r"[-+]?\d*\.\d+|\d+", sumPrice2).group(0))
+        currency2 = find_currency(str(sumPrice2))
+        sumPrice2 = parse_price(str(sumPrice2))
+
     print("Toplam Ödenecek Tutar (Optional)", sumPrice2)
     print("Para Birimi (Optional)", currency2)
 
@@ -309,22 +292,12 @@ conn.commit()
 # Insert package and price lists to products table
 if mul_sum:
     for i in range(len(packages)):
-        cleanPackages = str(packages[i])
-        cleanPackages = cleanPackages.replace("['", "")
-        cleanPackages = cleanPackages.replace("']", "")
-        cleanPackages = cleanPackages.replace("[\"", "")
-        cleanPackages = cleanPackages.replace("\"]", "")
-        cleanPackages = cleanPackages.replace("\\n", " ")                                     
+        cleanPackages = clean_list(str(packages[i]))
         c.execute("INSERT INTO products VALUES(NULL,?,?,?,?,?)", (str(dateFormatted), template, cleanPackages, float(prices[i]), currency))
 else:
     for i in range(len(packages)):
         print(prices)
-        cleanPackages = str(packages[i])
-        cleanPackages = cleanPackages.replace("['", "")
-        cleanPackages = cleanPackages.replace("']", "")
-        cleanPackages = cleanPackages.replace("[\"", "")
-        cleanPackages = cleanPackages.replace("\"]", "")
-        cleanPackages = cleanPackages.replace("\\n", " ")    
+        cleanPackages = clean_list(str(packages[i]))    
         c.execute("INSERT INTO products VALUES(NULL,?,?,?,?,?)", (str(dateFormatted), template, cleanPackages, float(prices[i]), currency))
 conn.commit()
 conn.close()
