@@ -313,6 +313,5 @@ for i in data:
     sum_mul_list.append(i[5])
 conn.close()
 plt.plot(date, sum_list, label="Toplam Ödenecek Tutar")
-plt.plot(date, sum_mul_list, label="Toplam Ödenecek Tutar (Optional)")
 plt.legend()
 plt.show()
