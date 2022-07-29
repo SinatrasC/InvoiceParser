@@ -111,16 +111,16 @@ else:
     pdfPassword = ""
 
 covertedHTML = convert2html(filePDF, pages=None)
-fileConverted = open(fileOut, "wb")
-fileConverted.write(covertedHTML)
-fileConverted.close()
+
+# Decide to use temp file or keep file in path
+if(keepConvertedHtml == True):
+    fileConverted = open(fileOut, "wb")
+    fileConverted.write(covertedHTML)
+    fileConverted.close()
 
 ### Parsing Stage after HTML conversion ###
 
-HTMLFile = open(fileOut, "r", encoding="utf-8")
-source = HTMLFile.read()
-soup = BeautifulSoup(source, "html.parser")
-HTMLFile.close()
+soup = BeautifulSoup(covertedHTML, "html.parser")
 
 ### Template Matching Before Patterns ###
 flags = config.items( "Templates" )
@@ -218,10 +218,6 @@ if mul_sum:
 
     print("Toplam Ödenecek Tutar (Optional)", sumPrice2)
     print("Para Birimi (Optional)", currency2)
-
-# Decide to use temp file or keep file in path
-if(keepConvertedHtml == False):
-    os.unlink(fileOut)
 
 ### Database Insertion Stage ###
 conn = sqlite3.connect('invoices.db')
