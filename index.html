@@ -1,8 +1,7 @@
-
 <form action="index.php" method="post">
     <input type="text" name="query" placeholder="Enter a SQL query">
     <input type="submit" value="Submit">
 </form>
 
-$db = new SQLite3('test.db');
-$results = $db->query($_POST['query']);
+$query = $_POST['query'];
+$result = mysqli_query($connection, $query);
