@@ -25,13 +25,13 @@ def convert2html(fname, pages=None):
     pagenums = set()     
     manager = PDFResourceManager()
     output = io.BytesIO()
-
-    converter = HTMLConverter(manager, output, codec='utf-8', laparams=LAParams(line_margin=0.2,
-                                                                                word_margin=0.1,
-                                                                                char_margin=0.5,
-                                                                                line_overlap=0.4,
-                                                                                boxes_flow=0.5,
-                                                                                all_texts=True,))
+    converter = HTMLConverter(manager, output, codec='utf-8', laparams=LAParams())
+#    converter = HTMLConverter(manager, output, codec='utf-8', laparams=LAParams(line_margin=0.2,
+#                                                                                word_margin=0.1,
+#                                                                                char_margin=0.5,
+#                                                                                line_overlap=0.4,
+#                                                                                boxes_flow=0.5,
+#                                                                                all_texts=True,))
     interpreter = PDFPageInterpreter(manager, converter)  
     infile = open(fname, 'rb')
     ### As invoices could be multiple pages and its number is not static determining a for loop for each page
@@ -302,21 +302,3 @@ else:
         c.execute("INSERT INTO products VALUES(NULL,?,?,?,?,?)", (str(dateFormatted), template, cleanPackages, float(prices[i]), currency))
 conn.commit()
 conn.close()
-
-### Database Read Stage ###
-conn = sqlite3.connect('invoices.db')
-c = conn.cursor()
-c.execute("SELECT * FROM summaries")
-data = c.fetchall()
-date = []
-sum_list = []
-sum_mul_list = []
-for i in data:
-    print (i)
-    date.append(i[1])
-    sum_list.append(i[3])
-    sum_mul_list.append(i[5])
-conn.close()
-plt.plot(date, sum_list, label="Toplam Ödenecek Tutar")
-plt.legend()
-plt.show()
