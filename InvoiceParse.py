@@ -23,13 +23,11 @@ def convert2html(fname, pages=None):
     pagenums = set()     
     manager = PDFResourceManager()
     output = io.BytesIO()
-    converter = HTMLConverter(manager, output, codec='utf-8', laparams=LAParams())
-#    converter = HTMLConverter(manager, output, codec='utf-8', laparams=LAParams(line_margin=0.2,
-#                                                                                word_margin=0.1,
-#                                                                                char_margin=0.5,
-#                                                                                line_overlap=0.4,
-#                                                                                boxes_flow=0.5,
-#                                                                                all_texts=True,))
+    if (altLAParams):
+        LAP = LAParams(line_margin=0.2,word_margin=0.1, char_margin=0.5, line_overlap=0.4, boxes_flow=0.5, all_texts=True)
+    else : 
+        LAP = LAParams()
+    converter = HTMLConverter(manager, output, codec='utf-8', laparams=LAP)
     interpreter = PDFPageInterpreter(manager, converter)  
     infile = open(fname, 'rb')
     ### As invoices could be multiple pages and its number is not static determining a for loop for each page
@@ -109,6 +107,7 @@ keepConvertedHtml = config.getboolean('GeneralSettings','keepConvertedHtml')
 autoCurrencyConversion = config.getboolean('GeneralSettings','autoCurrencyConversion')
 pdfPasswordSupport = config.getboolean('GeneralSettings','pdfPasswordSupport')
 globalOCRSupport = config.getboolean('GeneralSettings','globalOCRSupport')
+altLAParams = config.getboolean('GeneralSettings','alternativeLAParams')
 
 if (globalOCRSupport):
     tesseractPath = config['GeneralSettings']['tesseractPath']
