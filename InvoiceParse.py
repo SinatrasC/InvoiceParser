@@ -94,7 +94,8 @@ def clean_list(element):
 
 path = "C:\\Users\\Emin\\Desktop\\InvoiceParse"
 #fileIn= "e-Fatura"
-fileIn= "ShowXML"
+fileIn = "image_01"
+#fileIn= "ShowXML"
 #fileIn= "e-FaturaGFW"
 #fileIn= "ShowXMLtt"
 #fileIn= "e-Fatura622"
@@ -110,7 +111,8 @@ pdfPasswordSupport = config.getboolean('GeneralSettings','pdfPasswordSupport')
 globalOCRSupport = config.getboolean('GeneralSettings','globalOCRSupport')
 
 if (globalOCRSupport):
-    tesseractPath = config.get('GeneralSettings','tesseractPath')
+    tesseractPath = config['GeneralSettings']['tesseractPath']
+    tesseractPath = tesseractPath.replace("\"", "")
 else:
     tesseractPath = ""
 
@@ -118,7 +120,6 @@ if(pdfPasswordSupport):
     pdfPassword = config.get('GeneralSettings','pdfPassword')
 else:
     pdfPassword = ""
-
 
 covertedHTML = convert2html(filePDF, pages=None)
 
@@ -138,6 +139,22 @@ for key, flag in flags:
     if(soup.find(text=re.compile(flag))):
         template = flag
         break
+    else:
+        template = None
+
+if template == None:
+    instance = OCR()
+    instance.set_path(tesseractPath)
+    img = instance.pdf2img(filePDF)
+    ocResult = instance.get_text(img, "eng")
+    print(ocResult)
+    for key, flag in flags:
+        if(re.search(re.compile(flag), ocResult)):
+            template = flag
+            break
+        else:
+            print("Error : Template is not recognized on both HTML and OCR")
+            exit(1)
 
 #  Load Section CSS Selectors
 sum_selector = config[template]['sum_selector']
