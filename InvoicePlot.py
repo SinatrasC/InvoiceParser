@@ -1,6 +1,4 @@
 from matplotlib import pyplot as plt
-import datetime as dt
-import numpy as np
 import configparser
 import sqlite3
 import re
@@ -47,7 +45,7 @@ for key, flag in flags:
 try:
     html_file = open('invoice_plot.html', 'w')
 except:
-    print("File could not be opened, please check if file is writeable or appropriate permissions are set")
+    print("HTML file could not be opened, please check if file is writeable or appropriate permissions are set")
     sys.exit()
 
 html_file.write('<html><head><title>Invoice Plot</title></head><body>')
