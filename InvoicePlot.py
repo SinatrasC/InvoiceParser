@@ -15,7 +15,7 @@ for key, flag in flags:
     #try to connect db catch error if db not exist
     try:
         conn = sqlite3.connect('invoices.db')
-    except:
+    except Exception:
         print("DB could not be opened or created, please check if file is writeable or appropriate permissions are set")
         sys.exit(1)
 
@@ -39,12 +39,11 @@ for key, flag in flags:
         plt.ylabel('Price')
         plt.tight_layout(pad=5)
         plt.savefig('plots/invoice_plot_' + flag + '.png', format = "png", dpi = 300, bbox_inches = "tight", pad_inches=0.5)
-        plt.show()
         plt.close()
 
 try:
     html_file = open('invoice_plot.html', 'w')
-except:
+except Exception:
     print("HTML file could not be opened, please check if file is writeable or appropriate permissions are set")
     sys.exit()
 

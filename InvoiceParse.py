@@ -2,6 +2,7 @@ from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
 from pdfminer.converter import HTMLConverter
 from pdfminer.layout import LAParams
 from pdfminer.pdfpage import PDFPage
+from OCRHandler import OCR
 from bs4 import BeautifulSoup
 import datetime as dt
 import configparser
@@ -10,6 +11,7 @@ import requests
 import io
 import sys
 import re
+
 
 #  Load Config
 config = configparser.ConfigParser()
@@ -105,11 +107,18 @@ filePDF=path+"/"+fileIn+".pdf"
 keepConvertedHtml = config.getboolean('GeneralSettings','keepConvertedHtml')
 autoCurrencyConversion = config.getboolean('GeneralSettings','autoCurrencyConversion')
 pdfPasswordSupport = config.getboolean('GeneralSettings','pdfPasswordSupport')
+globalOCRSupport = config.getboolean('GeneralSettings','globalOCRSupport')
+
+if (globalOCRSupport):
+    tesseractPath = config.get('GeneralSettings','tesseractPath')
+else:
+    tesseractPath = ""
 
 if(pdfPasswordSupport):
     pdfPassword = config.get('GeneralSettings','pdfPassword')
 else:
     pdfPassword = ""
+
 
 covertedHTML = convert2html(filePDF, pages=None)
 
