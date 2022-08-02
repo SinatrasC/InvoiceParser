@@ -3,16 +3,12 @@ from pdfminer.converter import HTMLConverter
 from pdfminer.layout import LAParams
 from pdfminer.pdfpage import PDFPage
 from bs4 import BeautifulSoup
-from matplotlib import pyplot as plt
 import datetime as dt
-import numpy as np
 import configparser
 import sqlite3
-from pkg_resources import cleanup_resources
 import requests
 import io
 import sys
-import os
 import re
 
 #  Load Config
