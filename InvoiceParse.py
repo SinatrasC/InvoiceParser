@@ -127,6 +127,7 @@ else:
 covertedHTML = convert2html(filePDF, pages=None)
 
 # Decide to use temp file or keep file in path
+
 if(keepConvertedHtml == True):
     fileConverted = open(fileOut, "wb")
     fileConverted.write(covertedHTML)
@@ -153,13 +154,13 @@ if template == None:
     instance.set_path(tesseractPath)
     img = instance.pdf2img(filePDF)
     ocResult = instance.get_text(img, "eng")
-    print(ocResult)
     for key, flag in flags:
         if(re.search(re.compile(flag), ocResult)):
             template = flag
             break
 
 # If template is recognized in HTML search, load CSS Selectors for parsing from HTML
+
 else:
     #  Load Section CSS Selectors
     sum_selector = config[template]['sum_selector']
@@ -189,12 +190,11 @@ else:
         date = [r.text.strip() for r in date]
         dateFormatted = parse_date(date)
 
-    print("Fatura Tarihi", dateFormatted)
-
     i = packages_index   # CSS index loop counter for Packages
     z = prices_index  # CSS index loop counter for Prices
 
     # Create package and price lists
+
     packages = []
     prices = []
 
@@ -215,8 +215,6 @@ else:
         price = [r.text.strip() for r in price]
         
         z = z + 1   # Increment index of Prices CSS Selector to adress next row/price
-        
-        print("Paket :", str(package), "Fiyatı :", price)
 
         price = parse_price(str(price))
         packages.append(package)
@@ -233,9 +231,6 @@ else:
         currency = find_currency(str(sumPrice))
         sumPrice = parse_price(str(sumPrice))
 
-    print("Toplam Ödenecek Tutar", sumPrice)
-    print("Para Birimi", currency)
-
     if mul_sum:
         sumSelector2 = sum_selector2  # Selector for price summary, static for now will be dynamic with after config implementation
         if "br" in sumSelector2:
@@ -247,9 +242,6 @@ else:
             sumPrice2 = [r.text.strip() for r in sumPrice2]
             currency2 = find_currency(str(sumPrice2))
             sumPrice2 = parse_price(str(sumPrice2))
-
-        print("Toplam Ödenecek Tutar (Optional)", sumPrice2)
-        print("Para Birimi (Optional)", currency2)
 
 # If template is not recognized in both HTML and OCR, raise error and exit
 
@@ -295,8 +287,10 @@ else:
         sumPrice2 = parse_price(str(sumPrice2))
 
 ### Database Insertion Stage ###
+
 conn = sqlite3.connect('invoices.db')
 c = conn.cursor()
+
 # Create summaries table within desired format if it doesnt exist
 c.execute("""CREATE TABLE IF NOT EXISTS summaries(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -308,6 +302,7 @@ c.execute("""CREATE TABLE IF NOT EXISTS summaries(
     sum_mul_currency TEXT
     )""")
 conn.commit()
+
 # Create products table within desired format if it doesnt exist
 c.execute("""CREATE TABLE IF NOT EXISTS products(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -320,6 +315,7 @@ c.execute("""CREATE TABLE IF NOT EXISTS products(
 conn.commit()
 
 # Insert date company and sum lists to summaries table
+
 if mul_sum:
     c.execute("INSERT INTO summaries VALUES(NULL,?,?,?,?,?,?)", (str(dateFormatted), template, sumPrice, currency, sumPrice2, currency2))
 else:
@@ -362,6 +358,7 @@ else:
 conn.commit()
 
 # Insert package and price lists to products table
+
 if mul_sum:
     for i in range(len(packages)):
         cleanPackages = clean_list(str(packages[i]))
@@ -373,3 +370,22 @@ else:
         c.execute("INSERT INTO products VALUES(NULL,?,?,?,?,?)", (str(dateFormatted), template, cleanPackages, float(prices[i]), currency))
 conn.commit()
 conn.close()
+
+debug = False
+
+if (debug):
+    print("Fatura Tarihi", dateFormatted)
+    print(ocResult)
+
+    for i in range(len(packages)):
+        cleanPackages = clean_list(str(packages[i]))
+        print("Paket :", str(cleanPackages), "Fiyatı :", float(prices[i]))
+
+    print("Toplam Ödenecek Tuta", sumPrice)
+    print("Para Birimi", currency)
+        
+    if mul_sum:
+        print("Toplam Ödenecek Tutar (Optional)", sumPrice2)
+        print("Para Birimi (Optional)", currency2)
+
+print("Database Insertion Successful, Exiting...")
