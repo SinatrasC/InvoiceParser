@@ -142,6 +142,7 @@ for key, flag in flags:
         template = None
 
 if template == None:
+    print("Warning : Template is not recognized in HTML search, as alternative OCR will be used")
     instance = OCR()
     instance.set_path(tesseractPath)
     img = instance.pdf2img(filePDF)
@@ -151,99 +152,134 @@ if template == None:
         if(re.search(re.compile(flag), ocResult)):
             template = flag
             break
-        else:
-            print("Error : Template is not recognized on both HTML and OCR")
-            exit(1)
-
-#  Load Section CSS Selectors
-sum_selector = config[template]['sum_selector']
-date_selector = config[template]['date_selector']
-prices_selector_s1 = config[template]['prices_selector_s1']
-prices_selector_s2 = config[template]['prices_selector_s2']
-packages_selector_s1 = config[template]['packages_selector_s1']
-packages_selector_s2 = config[template]['packages_selector_s2']
-
-#  Load Indexes of CSS Selectors
-prices_index = int(config[template]['prices_index'])
-packages_index = int(config[template]['packages_index'])
-loop_range_start = int(config[template]['loop_range_start'])
-loop_range_end = int(config[template]['loop_range_end'])
-
-#  Load Optional Parameters
-mul_sum = config.getboolean(template,'mul_sum')
-if mul_sum:
-    sum_selector2 = config[template]['sum_selector2']
-
-dateSelector = date_selector   # Selector for invoice date, static for now will be dynamic with after config implementation
-if "br" in dateSelector:
-    date = soup.select(dateSelector)[0].next_sibling # "next_sibling" is used for reading the value after <br> tag in case there is a br tag in our selector
-    dateFormatted = parse_date(date)
 else:
-    date = soup.select(dateSelector)
-    date = [r.text.strip() for r in date]
-    dateFormatted = parse_date(date)
+    #  Load Section CSS Selectors
+    sum_selector = config[template]['sum_selector']
+    date_selector = config[template]['date_selector']
+    prices_selector_s1 = config[template]['prices_selector_s1']
+    prices_selector_s2 = config[template]['prices_selector_s2']
+    packages_selector_s1 = config[template]['packages_selector_s1']
+    packages_selector_s2 = config[template]['packages_selector_s2']
 
-print("Fatura Tarihi", dateFormatted)
+    #  Load Indexes of CSS Selectors
+    prices_index = int(config[template]['prices_index'])
+    packages_index = int(config[template]['packages_index'])
+    loop_range_start = int(config[template]['loop_range_start'])
+    loop_range_end = int(config[template]['loop_range_end'])
 
-i = packages_index   # CSS index loop counter for Packages
-z = prices_index  # CSS index loop counter for Prices
+    #  Load Optional Parameters
+    mul_sum = config.getboolean(template,'mul_sum')
+    if mul_sum:
+        sum_selector2 = config[template]['sum_selector2']
 
-# Create package and price lists
-packages = []
-prices = []
-
-loop = range(loop_range_start, loop_range_end)   # Temp loop stop rule until determining empty rows     
-for i in loop:
-    packageSelector = packages_selector_s1 
-    packageSelector += str(i)
-    packageSelector += packages_selector_s2
-    package = soup.select(packageSelector)
-    package = [r.text.strip() for r in package]
-
-    i = i + 1   # Increment index of Packages CSS Selector to adress next row/package
-    
-    priceSelector = prices_selector_s1
-    priceSelector += str(z)
-    priceSelector += prices_selector_s2
-    price = soup.select(priceSelector)
-    price = [r.text.strip() for r in price]
-    
-    z = z + 1   # Increment index of Prices CSS Selector to adress next row/price
-    
-    print("Paket :", str(package), "Fiyatı :", price)
-
-    price = parse_price(str(price))
-    packages.append(package)
-    prices.append(price)
-        
-sumSelector = sum_selector  # Selector for price summary, static for now will be dynamic with after config implementation
-if "br" in sumSelector:
-    sumPrice = soup.select(sumSelector)[0].next_sibling # "next_sibling" is used for reading the value after <br> tag
-    currency = find_currency(str(sumPrice))
-    sumPrice = parse_price(str(sumPrice))
-else:
-    sumPrice = soup.select(sumSelector)
-    sumPrice = [r.text.strip() for r in sumPrice]
-    currency = find_currency(str(sumPrice))
-    sumPrice = parse_price(str(sumPrice))
-
-print("Toplam Ödenecek Tutar", sumPrice)
-print("Para Birimi", currency)
-
-if mul_sum:
-    sumSelector2 = sum_selector2  # Selector for price summary, static for now will be dynamic with after config implementation
-    if "br" in sumSelector2:
-        sumPrice2 = soup.select(sumSelector2)[0].next_sibling # "next_sibling" is used for reading the value after <br> tag
-        currency2 = find_currency(str(sumPrice2))
-        sumPrice2 = parse_price(str(sumPrice2))
+    dateSelector = date_selector   # Selector for invoice date, static for now will be dynamic with after config implementation
+    if "br" in dateSelector:
+        date = soup.select(dateSelector)[0].next_sibling # "next_sibling" is used for reading the value after <br> tag in case there is a br tag in our selector
+        dateFormatted = parse_date(date)
     else:
-        sumPrice2 = soup.select(sumSelector2)
-        sumPrice2 = [r.text.strip() for r in sumPrice2]
+        date = soup.select(dateSelector)
+        date = [r.text.strip() for r in date]
+        dateFormatted = parse_date(date)
+
+    print("Fatura Tarihi", dateFormatted)
+
+    i = packages_index   # CSS index loop counter for Packages
+    z = prices_index  # CSS index loop counter for Prices
+
+    # Create package and price lists
+    packages = []
+    prices = []
+
+    loop = range(loop_range_start, loop_range_end)   # Temp loop stop rule until determining empty rows     
+    for i in loop:
+        packageSelector = packages_selector_s1 
+        packageSelector += str(i)
+        packageSelector += packages_selector_s2
+        package = soup.select(packageSelector)
+        package = [r.text.strip() for r in package]
+
+        i = i + 1   # Increment index of Packages CSS Selector to adress next row/package
+        
+        priceSelector = prices_selector_s1
+        priceSelector += str(z)
+        priceSelector += prices_selector_s2
+        price = soup.select(priceSelector)
+        price = [r.text.strip() for r in price]
+        
+        z = z + 1   # Increment index of Prices CSS Selector to adress next row/price
+        
+        print("Paket :", str(package), "Fiyatı :", price)
+
+        price = parse_price(str(price))
+        packages.append(package)
+        prices.append(price)
+            
+    sumSelector = sum_selector  # Selector for price summary, static for now will be dynamic with after config implementation
+    if "br" in sumSelector:
+        sumPrice = soup.select(sumSelector)[0].next_sibling # "next_sibling" is used for reading the value after <br> tag
+        currency = find_currency(str(sumPrice))
+        sumPrice = parse_price(str(sumPrice))
+    else:
+        sumPrice = soup.select(sumSelector)
+        sumPrice = [r.text.strip() for r in sumPrice]
+        currency = find_currency(str(sumPrice))
+        sumPrice = parse_price(str(sumPrice))
+
+    print("Toplam Ödenecek Tutar", sumPrice)
+    print("Para Birimi", currency)
+
+    if mul_sum:
+        sumSelector2 = sum_selector2  # Selector for price summary, static for now will be dynamic with after config implementation
+        if "br" in sumSelector2:
+            sumPrice2 = soup.select(sumSelector2)[0].next_sibling # "next_sibling" is used for reading the value after <br> tag
+            currency2 = find_currency(str(sumPrice2))
+            sumPrice2 = parse_price(str(sumPrice2))
+        else:
+            sumPrice2 = soup.select(sumSelector2)
+            sumPrice2 = [r.text.strip() for r in sumPrice2]
+            currency2 = find_currency(str(sumPrice2))
+            sumPrice2 = parse_price(str(sumPrice2))
+
+        print("Toplam Ödenecek Tutar (Optional)", sumPrice2)
+        print("Para Birimi (Optional)", currency2)
+
+if template == None:
+    print("Error : Template is not recognized on both HTML and OCR search")
+    exit(1)
+else:
+    #  Load Section Regex Patterns
+    sum_pattern = config[template]['sum_pattern']
+    date_pattern = config[template]['date_pattern']
+    prices_pattern_s1 = config[template]['prices_pattern_s1']
+    prices_pattern_s2 = config[template]['prices_pattern_s2']
+    packages_pattern_s1 = config[template]['packages_pattern_s1']
+    packages_pattern_s2 = config[template]['packages_pattern_s2']
+
+    #  Load Indexes of Regex Patterns
+    prices_index = int(config[template]['prices_index'])
+    packages_index = int(config[template]['packages_index'])
+    loop_range_start = int(config[template]['loop_range_start'])
+    loop_range_end = int(config[template]['loop_range_end'])
+
+    #  Load Optional Parameters
+    mul_sum = config.getboolean(template,'mul_sum')
+    if mul_sum:
+        sum_pattern2 = config[template]['sum_pattern2']
+    
+    datePattern = date_pattern
+    date = re.search(re.compile(datePattern), ocResult)
+    dateFormatted = parse_date(date)
+
+    sumPattern = sum_pattern
+    sumPrice = re.search(re.compile(sumPattern), ocResult).next_sibling
+    currency = find_currency(str(sumPrice))
+    sumPrice = parse_price(str(sumPrice))
+
+    if mul_sum:
+        sumPattern2 = sum_pattern2
+        sumPrice2 = re.search(re.compile(sumPattern2), ocResult)
         currency2 = find_currency(str(sumPrice2))
         sumPrice2 = parse_price(str(sumPrice2))
-
-    print("Toplam Ödenecek Tutar (Optional)", sumPrice2)
-    print("Para Birimi (Optional)", currency2)
 
 ### Database Insertion Stage ###
 conn = sqlite3.connect('invoices.db')
