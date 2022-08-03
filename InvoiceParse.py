@@ -12,7 +12,6 @@ import io
 import sys
 import re
 
-
 #  Load Config
 config = configparser.ConfigParser()
 config.read('config.ini')
@@ -23,19 +22,24 @@ def convert2html(fname, pages=None):
     pagenums = set()     
     manager = PDFResourceManager()
     output = io.BytesIO()
+
     if (altLAParams):
-        LAP = LAParams(line_margin=0.2,word_margin=0.1, char_margin=0.5, line_overlap=0.4, boxes_flow=0.5, all_texts=True)
-    else : 
+        LAP = LAParams(line_margin=0.2, word_margin=0.1, char_margin=0.5, line_overlap=0.4, boxes_flow=0.5, all_texts=True)
+    else: 
         LAP = LAParams()
+
     converter = HTMLConverter(manager, output, codec='utf-8', laparams=LAP)
     interpreter = PDFPageInterpreter(manager, converter)  
     infile = open(fname, 'rb')
+
     ### As invoices could be multiple pages and its number is not static determining a for loop for each page
     for page in PDFPage.get_pages(infile, pagenums, password=pdfPassword, caching=True, check_extractable=True):
         interpreter.process_page(page)
 
     HtmlConverted = output.getvalue()  
-    infile.close(); converter.close(); output.close()
+    infile.close()
+    converter.close()
+    output.close()
     return HtmlConverted
 
 def parse_date(date):
@@ -141,6 +145,8 @@ for key, flag in flags:
     else:
         template = None
 
+# If template is not recognized in HTML search, try to find it in OCR
+
 if template == None:
     print("Warning : Template is not recognized in HTML search, as alternative OCR will be used")
     instance = OCR()
@@ -152,6 +158,8 @@ if template == None:
         if(re.search(re.compile(flag), ocResult)):
             template = flag
             break
+
+# If template is recognized in HTML search, load CSS Selectors for parsing from HTML
 else:
     #  Load Section CSS Selectors
     sum_selector = config[template]['sum_selector']
@@ -243,9 +251,14 @@ else:
         print("Toplam Ödenecek Tutar (Optional)", sumPrice2)
         print("Para Birimi (Optional)", currency2)
 
+# If template is not recognized in both HTML and OCR, raise error and exit
+
 if template == None:
     print("Error : Template is not recognized on both HTML and OCR search")
     exit(1)
+
+# If template is recognized in OCR search, load Regex patterns for parsing from OCR
+
 else:
     #  Load Section Regex Patterns
     sum_pattern = config[template]['sum_pattern']
@@ -305,6 +318,7 @@ c.execute("""CREATE TABLE IF NOT EXISTS products(
     price_currency TEXT
     )""")
 conn.commit()
+
 # Insert date company and sum lists to summaries table
 if mul_sum:
     c.execute("INSERT INTO summaries VALUES(NULL,?,?,?,?,?,?)", (str(dateFormatted), template, sumPrice, currency, sumPrice2, currency2))
