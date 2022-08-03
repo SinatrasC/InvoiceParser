@@ -116,8 +116,11 @@ altLAParams = config.getboolean('GeneralSettings','alternativeLAParams')
 if (globalOCRSupport):
     tesseractPath = config['GeneralSettings']['tesseractPath']
     tesseractPath = tesseractPath.replace("\"", "")
+    popplerPath = config['GeneralSettings']['popplerPath']
+    popplerPath = popplerPath.replace("\"", "")
 else:
     tesseractPath = ""
+    popplerPath = ""
 
 if(pdfPasswordSupport):
     pdfPassword = config.get('GeneralSettings','pdfPassword')
@@ -151,7 +154,7 @@ for key, flag in flags:
 if template == None:
     print("Warning : Template is not recognized in HTML search, as alternative OCR will be used")
     instance = OCR()
-    instance.set_path(tesseractPath)
+    instance.set_path(tesseractPath, popplerPath)
     img = instance.pdf2img(filePDF)
     ocResult = instance.get_text(img, "eng")
     for key, flag in flags:
@@ -365,7 +368,6 @@ if mul_sum:
         c.execute("INSERT INTO products VALUES(NULL,?,?,?,?,?)", (str(dateFormatted), template, cleanPackages, float(prices[i]), currency))
 else:
     for i in range(len(packages)):
-        print(prices)
         cleanPackages = clean_list(str(packages[i]))    
         c.execute("INSERT INTO products VALUES(NULL,?,?,?,?,?)", (str(dateFormatted), template, cleanPackages, float(prices[i]), currency))
 conn.commit()
@@ -374,18 +376,18 @@ conn.close()
 debug = False
 
 if (debug):
-    print("Fatura Tarihi", dateFormatted)
+    print("Fatura Tarihi :", dateFormatted)
     print(ocResult)
 
     for i in range(len(packages)):
         cleanPackages = clean_list(str(packages[i]))
         print("Paket :", str(cleanPackages), "Fiyatı :", float(prices[i]))
 
-    print("Toplam Ödenecek Tuta", sumPrice)
-    print("Para Birimi", currency)
+    print("Toplam Ödenecek Tutar :", sumPrice)
+    print("Para Birimi :", currency)
         
     if mul_sum:
-        print("Toplam Ödenecek Tutar (Optional)", sumPrice2)
-        print("Para Birimi (Optional)", currency2)
+        print("Toplam Ödenecek Tutar (Optional) :", sumPrice2)
+        print("Para Birimi (Optional) :", currency2)
 
 print("Database Insertion Successful, Exiting...")
