@@ -8,14 +8,15 @@ class OCR:
         self.path = None
         self.image = None
         self.text = None
+        global poppler_path
         
-    def set_path(self, path):
-        self.path = path
+    def set_path(self, tes_path, pop_path):
+        self.path = tes_path
         pytesseract.pytesseract.tesseract_cmd = self.path
+        poppler_path = pop_path
 
     def pdf2img(self, pdf):
         self.pdf = pdf
-        poppler_path = r'C:\Users\Emin\poppler-22.04.0\Library\bin'
         images = convert_from_path(pdf, poppler_path=poppler_path)
         return images[0]
     
