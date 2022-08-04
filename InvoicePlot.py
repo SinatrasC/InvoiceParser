@@ -48,6 +48,15 @@ except Exception:
     sys.exit()
 
 html_file.write('<html><head><title>Invoice Plot</title></head><body>')
+#add a heading to html file
+html_file.write('<h1>Invoice Plot</h1>')
+html_file.write('<h3>This is a plot of the invoice price history</h3>')
+#make h3 fontsize 80 and h1 fontsize 170
+html_file.write('<style>h3 {font-size: 65px;} h1 {font-size: 170px;}</style>')
+
+#add a paragraph to html file
+
+#add a image to html file
 for file in os.listdir("plots/"):
     if file.endswith(".png"):
         html_file.write('<img src="' + "plots/" + file + '" alt="' + file + '" width="75%">')
