@@ -14,7 +14,12 @@ import re
 
 #  Load Config
 config = configparser.ConfigParser()
-config.read('config.ini')
+
+try:
+    config.read('config.ini')
+except Exception:
+    print ("Error : Config file not found")
+    exit()
 
 ### HTML Conversion Stage ###
 
@@ -291,7 +296,12 @@ else:
 
 ### Database Insertion Stage ###
 
-conn = sqlite3.connect('invoices.db')
+try:
+    conn = sqlite3.connect('invoices.db')
+except Exception:
+    print("DB could not be opened or created, please check if file is writeable or appropriate permissions are set")
+    sys.exit(1)
+    
 c = conn.cursor()
 
 # Create summaries table within desired format if it doesnt exist
